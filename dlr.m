@@ -1,23 +1,22 @@
-function Y = dlr(Y,F,r,h,T)
-    [U,S,V] = svd(Y);
-    S = S(1:r, 1:r);
+function [Y,S,U,V] = dlr(Y0,F,r,h,T)
+    tol = 1e-14;
+    [U,S,V] = svd(Y0);
     U = U(:,1:r);
     V = V(:,1:r);
+    S = S(1:r,1:r);
+    W = F(Y0);
     Nt = floor(T/h);
-    Im = eye(size(U,1));
+    I = eye(size(Y0,1));
 
-    for n = 1:Nt-1
-        Z = F(Y);
-        S1 = U'*Z*V;
-        U1s = (Im - U*U')*Z*V;
-        V1s = (Im - V*V')*Z'*U;
-        U1 = qr(U1s);
-        V1 = qr(V1s);
+    %Yk(:,:,1) = Y0;
+    for n = 1:Nt
+        Sinv = 1./diag(max(S,tol));
+        U = U + h*(I - U*U')*W*V*Sinv;
+        S = S + h*(U'*W*V); 
+        V = V + h*(I - V*V')*W'*U*Sinv;
 
-        Y = Y + h*(U1*S*V' + U*S1*V' + U*S*V1');
-        [U,S,V] = svd(Y);
-        S = S(1:r,1:r);
-        U = U(:,1:r);
-        V = V(:,1:r);
+        %Yk(:,:,n+1) = U*S*V';
+        W = F(U*S*V');
     end
+    Y = U*S*V';
 end

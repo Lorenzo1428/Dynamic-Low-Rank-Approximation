@@ -1,7 +1,13 @@
 function A = heun(A,F,h,T)
     Nt = floor(T/h);
-    for n = 1:Nt-1
-        A1 = A + h*F(A);
-        A = A + +0.5*h*F(A) + 0.5*h*F(A1);
+     %m = size(A,1);
+     %Ak = zeros(m,m,Nt);
+     %Ak(:,:,1) = A;
+    for n = 1:Nt
+        Fa = F(A);
+        A1 = A + h*Fa;
+        A = A + +0.5*h*Fa + 0.5*h*F(A1);
+
+        %Ak(:,:,n+1) = A;
     end
 end

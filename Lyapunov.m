@@ -2,12 +2,12 @@ clc
 clear
 close all
 
-r = 20;
-T = 1;
+r = 5;
 h = 5e-4;
+T = 1;
 N = floor(T/h);
 n = 128;
-theta = 1e-5;
+theta = 0.01;
 
 L = diag(ones(n-1,1),1) + diag(ones(n-1,1),-1) - 2*diag(ones(n,1)); 
 L = n*n/(4*pi*pi)*L;
@@ -21,32 +21,26 @@ end
 nC = C/norm(C,"fro");
 
 A0 = sin(X).*sin(Y);
+rho = max(abs(svd(L)));
+cfl = 1/rho;
 
 f = @(A) L*A + A*L + theta*nC;
 
-%dlr classic
 tic
-Y = dlr(A0,f,r,h,T);
+    Ak = heun(A0,f,h,T);
 toc
 
-%bug
-tic
-%Yk = heunBUG(A0,N,h,f,r);
-toc
-
-%heun classic
-tic
-Ak = heun(A0,f,h,T);
-toc
-
-err = norm(Ak-Y,"fro");
-errinf = norm(Ak(:)-Y(:),inf);
-
-
-
-% %rk45 matlab
-% tic
-% fv = @(t,y) reshape(f(reshape(y,n,n)),[],1);
-% [~,yk] = ode45(fv,[0 T],A0(:),odeset(RelTol=1e-10));
-% Ak = reshape(yk(end,:),n,n);
-% toc
+r = [5 15 30 50 n];
+for i = 1:length(r)
+    tic
+        Y_bug(:,:,i) = heunBUGLyapunov(A0,N,h,L,theta*nC,r(i));
+    toc
+    tic
+        Y_dlr(:,:,i) = dlr(A0,f,r(i),h,T);
+    toc
+    err_bug(i) = norm(Ak - Y_bug(:,:,i),"fro");
+    err_dlr(i) = norm(Ak - Y_dlr(:,:,i),"fro");
+end
+T = table(err_bug',err_dlr');
+disp(T)
+semilogy(r,err_bug)

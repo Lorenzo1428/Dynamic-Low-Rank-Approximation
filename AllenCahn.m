@@ -2,12 +2,12 @@ clc
 clear 
 close all
 
-r = 128;
-T = 1e-3;
-h = 1e-3;
+r = 5;
+h = 5e-3;
+T = 1;
 N = floor(T/h);
-n = 128;
-theta = 1e-2;
+n =  128;
+theta = 0.01;
 
 L = diag(ones(n-1,1),1) + diag(ones(n-1,1),-1) - 2*diag(ones(n,1)); 
 L = n*n/(4*pi*pi)*L;
@@ -18,29 +18,24 @@ A0 = (exp(-tan(X).^2) + exp(-tan(Y).^2)).*sin(X).*sin(Y)./(1+ exp(abs(csc(-0.5*X
 
 f = @(A) theta*( L*A + A*L ) + A - A.*A.*A;
 
-% 
-%bug
 tic
-Y = heunBUG(A0,N,h,f,r);
+    Ak = heun(A0,f,h,T);
 toc
 
-%dlr
-tic
-%Y = dlr(A0,f,r,h,T);
-toc
+r = [5 15 30 50 n];
+for i = 1:length(r)
+    tic
+        Y_bug(:,:,i) = heunBUGAllenCahn(A0,N,h,L,theta,r(i));
+    toc
+    tic
+        Y_dlr(:,:,i) = dlr(A0,f,r(i),h,T);
+    toc
+    err_bug(i) = norm(Ak - Y_bug(:,:,i),"fro");
+    err_dlr(i) = norm(Ak - Y_dlr(:,:,i),"fro");
+end
+T = table(err_bug',err_dlr');
+disp(T)
+semilogy(r,err_bug)
 
-%heun classic
-tic
-Ak = heun(A0,f,h,T);
-toc
-
-errinf = max(max(abs(Y-Ak)));
-err = norm(Ak - Y,"fro");
 
 
-%rk45 matlab
-% tic
-% fv = @(t,y) reshape(f(reshape(y,n,n)),[],1);
-% [~,yk] = ode45(fv,[0 T],A0(:),odeset(RelTol=1e-10));
-% Ak = reshape(yk(end,:),n,n);
-% toc
